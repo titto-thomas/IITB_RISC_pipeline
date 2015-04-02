@@ -1,55 +1,61 @@
 v 3
-file . "PCImmAdder.vhdl" "20150320205202.000" "20150328195807.064":
-  entity pcimmadd at 6( 142) + 0 on 3741;
-  architecture code of pcimmadd at 20( 542) + 0 on 3742;
-file . "incr.vhdl" "20150322204036.000" "20150328195806.885":
-  entity incr at 6( 142) + 0 on 3729;
-  architecture code of incr at 19( 488) + 0 on 3730;
-file . "pipeline_RISC.vhdl" "20150322202537.000" "20150328195807.095":
-  entity pipeline_risc at 6( 173) + 0 on 3743;
-  architecture behave of pipeline_risc at 18( 581) + 0 on 3744;
-file . "testbench.vhdl" "20150324210226.000" "20150328195807.281":
-  entity testbench at 6( 185) + 0 on 3751;
-  architecture behave of testbench at 14( 292) + 0 on 3752;
-file . "SE.vhdl" "20150308224303.000" "20150328195807.248":
-  entity se at 6( 162) + 0 on 3749;
-  architecture signextend of se at 21( 539) + 0 on 3750;
-file . "regfile.vhdl" "20150318184053.000" "20150328195807.131":
-  entity regfile at 5( 129) + 0 on 3745;
-  architecture behave of regfile at 26( 937) + 0 on 3746;
-file . "mux4to1.vhdl" "20150308123134.000" "20150328195806.990":
-  entity mux4to1 at 4( 65) + 0 on 3737;
-  architecture behave of mux4to1 at 16( 388) + 0 on 3738;
-file . "mux2to1bit.vhdl" "20150309105610.000" "20150328195806.946":
-  entity mux2to1bit at 4( 65) + 0 on 3733;
-  architecture behave of mux2to1bit at 15( 269) + 0 on 3734;
+file . "LmSmBlock.vhdl" "20150402202030.000" "20150402202032.198":
+  entity lmsmblock at 6( 181) + 0 on 4435;
+  architecture behave of lmsmblock at 26( 837) + 0 on 4436;
+file . "FrwdBlock.vhd" "20150329031729.000" "20150329031733.330":
+  entity frwdblock at 6( 173) + 0 on 4431;
+  architecture behave of frwdblock at 23( 929) + 0 on 4432;
+file . "PCImmAdder.vhdl" "20150320205202.000" "20150329031732.879":
+  entity pcimmadd at 6( 142) + 0 on 4415;
+  architecture code of pcimmadd at 20( 542) + 0 on 4416;
+file . "incr.vhdl" "20150322204036.000" "20150329031732.689":
+  entity incr at 6( 142) + 0 on 4403;
+  architecture code of incr at 19( 488) + 0 on 4404;
+file . "pipeline_RISC.vhdl" "20150322202537.000" "20150329031732.902":
+  entity pipeline_risc at 6( 173) + 0 on 4417;
+  architecture behave of pipeline_risc at 18( 581) + 0 on 4418;
+file . "SE.vhdl" "20150308224303.000" "20150329031733.064":
+  entity se at 6( 162) + 0 on 4423;
+  architecture signextend of se at 21( 539) + 0 on 4424;
+file . "regfile.vhdl" "20150318184053.000" "20150329031732.941":
+  entity regfile at 5( 129) + 0 on 4419;
+  architecture behave of regfile at 26( 937) + 0 on 4420;
+file . "mux4to1.vhdl" "20150308123134.000" "20150329031732.802":
+  entity mux4to1 at 4( 65) + 0 on 4411;
+  architecture behave of mux4to1 at 16( 388) + 0 on 4412;
+file . "mux2to1bit.vhdl" "20150309105610.000" "20150329031732.756":
+  entity mux2to1bit at 4( 65) + 0 on 4407;
+  architecture behave of mux2to1bit at 15( 269) + 0 on 4408;
 file . "IITB_RISC.vhdl" "20150310201040.000" "20150310215600.539":
   entity iitb_risc at 6( 173) + 0 on 3177;
   architecture behave of iitb_risc at 18( 532) + 0 on 3178;
-file . "Datapath.vhdl" "20150328195749.000" "20150328195806.403":
-  entity datapath at 6( 168) + 0 on 3725;
-  architecture behave of datapath at 27( 1173) + 0 on 3726;
-file . "alu16.vhdl" "20150318183300.000" "20150328195806.263":
-  entity alu16 at 6( 146) + 0 on 3719;
-  architecture code of alu16 at 24( 783) + 0 on 3720;
-file . "ControlPath.vhdl" "20150324204302.000" "20150328195806.339":
-  entity controlpath at 6( 168) + 0 on 3723;
-  architecture behave of controlpath at 24( 866) + 0 on 3724;
-file . "FlagBlock.vhdl" "20150318183314.000" "20150328195806.856":
-  entity flagblock at 6( 160) + 0 on 3727;
-  architecture behave of flagblock at 26( 891) + 0 on 3728;
-file . "Memory.vhdl" "20150318183332.000" "20150328195806.907":
-  entity memory at 6( 156) + 0 on 3731;
-  architecture ram of memory at 21( 648) + 0 on 3732;
-file . "mux2to1.vhdl" "20150318183352.000" "20150328195806.965":
-  entity mux2to1 at 4( 65) + 0 on 3735;
-  architecture behave of mux2to1 at 18( 373) + 0 on 3736;
-file . "mux8to1.vhdl" "20150308123136.000" "20150328195807.021":
-  entity mux8to1 at 4( 65) + 0 on 3739;
-  architecture behave of mux8to1 at 16( 481) + 0 on 3740;
-file . "reg.vhdl" "20150318183906.000" "20150328195807.214":
-  entity reg at 6( 157) + 0 on 3747;
-  architecture behave of reg at 24( 587) + 0 on 3748;
-file . "CondBlock.vhdl" "20150320190047.000" "20150328195806.315":
-  entity condblock at 6( 173) + 0 on 3721;
-  architecture condition of condblock at 19( 557) + 0 on 3722;
+file . "Datapath.vhdl" "20150402202001.000" "20150402202003.955":
+  entity datapath at 6( 168) + 0 on 4433;
+  architecture behave of datapath at 27( 1173) + 0 on 4434;
+file . "alu16.vhdl" "20150318183300.000" "20150329031731.996":
+  entity alu16 at 6( 146) + 0 on 4393;
+  architecture code of alu16 at 24( 783) + 0 on 4394;
+file . "ControlPath.vhdl" "20150328211702.000" "20150329031732.069":
+  entity controlpath at 6( 168) + 0 on 4397;
+  architecture behave of controlpath at 24( 866) + 0 on 4398;
+file . "FlagBlock.vhdl" "20150318183314.000" "20150329031732.658":
+  entity flagblock at 6( 160) + 0 on 4401;
+  architecture behave of flagblock at 26( 891) + 0 on 4402;
+file . "Memory.vhdl" "20150318183332.000" "20150329031732.719":
+  entity memory at 6( 156) + 0 on 4405;
+  architecture ram of memory at 21( 648) + 0 on 4406;
+file . "mux2to1.vhdl" "20150318183352.000" "20150329031732.776":
+  entity mux2to1 at 4( 65) + 0 on 4409;
+  architecture behave of mux2to1 at 18( 373) + 0 on 4410;
+file . "mux8to1.vhdl" "20150308123136.000" "20150329031732.834":
+  entity mux8to1 at 4( 65) + 0 on 4413;
+  architecture behave of mux8to1 at 16( 481) + 0 on 4414;
+file . "reg.vhdl" "20150318183906.000" "20150329031733.028":
+  entity reg at 6( 157) + 0 on 4421;
+  architecture behave of reg at 24( 587) + 0 on 4422;
+file . "CondBlock.vhdl" "20150320190047.000" "20150329031732.039":
+  entity condblock at 6( 173) + 0 on 4395;
+  architecture condition of condblock at 19( 557) + 0 on 4396;
+file . "testbench.vhdl" "20150329030003.000" "20150329031733.221":
+  entity testbench at 6( 185) + 0 on 4429;
+  architecture behave of testbench at 14( 292) + 0 on 4430;

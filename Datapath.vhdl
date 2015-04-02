@@ -172,12 +172,41 @@ component PCImmAdd is
 	);
 end component;
 
+component FrwdBlock is
+port (
+	MA_M4_Sel, WB_M4_Sel : in std_logic_vector(1 downto 0);		-- M4 sel lines
+	MA_RFWrite, WB_RFWrite : in std_logic;				-- RF write
+	OpCode : in std_logic_vector(5 downto 0);			-- Opcode (12-15 & 0-1)
+	Curr_M7_Sel, Curr_M8_Sel : in std_logic_vector(1 downto 0);	-- Current Mux select lines
+	MA_Ir911, WB_Ir911, Ir35, Ir68 : in std_logic_vector(2 downto 0);	-- Source and destination registers
+	ALUout, MemOut : in std_logic_vector(15 downto 0);		-- ALUout and Data memory out
+	M7_In, M8_In : out std_logic_vector(15 downto 0);		-- Inputs for M7 and M8
+	Nxt_M7_Sel, Nxt_M8_Sel : out std_logic_vector(1 downto 0)	-- Updated Mux select lines
+    );
+end component;
+
+component LmSmBlock is
+port (
+	clock, reset : in std_logic;
+	Ir0_8 : in std_logic_vector(8 downto 0);
+	Ir12_15 : in std_logic_vector(3 downto 0);
+	M1_Sel, M2_Sel, M3_Sel : in std_logic;
+	M4_Sel, M9_Sel, M7_Sel, M8_Sel : in std_logic_vector(1 downto 0);
+	PC_en, IF_en, MemRead, MemWrite, RF_Write : in std_logic;
+
+	M1_Sel_ls, M2_Sel_ls, M3_Sel_ls : out std_logic;
+	M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls : out std_logic_vector(1 downto 0);
+	PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls : out std_logic;
+	LM_reg, SM_reg : out std_logic_vector(2 downto 0)
+	);
+end component;
+
 --==================================== Signals ====================================================--
 
 signal MA_in, MA_out : std_logic_vector(70 downto 0);	-- Memory Access pipeline register
 signal EX_in, EX_out : std_logic_vector(90 downto 0);	-- Execute pipeline register
 signal RR_in, RR_out : std_logic_vector(105 downto 0);	-- Register Read pipeline register
-signal DC_in, DC_out : std_logic_vector(54 downto 0);	-- Decode pipeline register
+signal DC_in, DC_out : std_logic_vector(60 downto 0);	-- Decode pipeline register
 signal IF_in, IF_out : std_logic_vector(31 downto 0);	-- Fetch pipeline register
 
 signal ZPad : std_logic_vector(15 downto 0);	-- Zero padded output of WB(63-55)
@@ -243,6 +272,16 @@ signal FR_out : std_logic_vector(1 downto 0);					-- Flag Register
 
 signal MA_en : std_logic;		-- Enable MA updation
 
+signal MA_Ir911, WB_Ir911, EX_Ir35, EX_Ir68 : std_logic_vector(2 downto 0); -- Forwarding block input
+signal M7_In, M8_In : std_logic_vector(15 downto 0);		-- Mux Inputs
+signal Nxt_M7_Sel, Nxt_M8_Sel, MA_M4_Sel : std_logic_vector(1 downto 0);		-- Mux Select lines
+signal MA_RFWrite : std_logic;
+
+signal M1_Sel_ls, M2_Sel_ls, M3_Sel_ls : std_logic;
+signal M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls : std_logic_vector(1 downto 0);
+signal PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls : std_logic;
+
+signal LM_reg, SM_reg : std_logic_vector(2 downto 0);
 --================================================================================================--
 
 begin  -- behave
@@ -263,6 +302,8 @@ begin  -- behave
 	WB_LM_DestAdr <= MA_out(6 downto 4);
 	WB_DestAdr <= MA_out(3 downto 1);
 	WB_RFWrite <= MA_out(34);
+	
+	WB_Ir911 <= MA_out(3 downto 1);
 
 --================================= Memory Access ====================================================--
 
@@ -281,9 +322,12 @@ begin  -- behave
 	MA_PC <= EX_out(22 downto 7);
 	MA_B <= EX_out(66 downto 51);
 	MA_A <= EX_out(50 downto 35);
+	MA_M4_Sel <= EX_out(33 downto 32);
+	MA_RFWrite <= EX_out(34);
 
 	MA_en <= '1';	-- Will be modified by LM/SM block
 
+	MA_Ir911 <= EX_out(3 downto 1);
 
 	MA_in(0) <= EX_out(0);					-- M3_Sel
 	MA_in(3 downto 1) <= EX_out(3 downto 1);		-- 9-11
@@ -299,8 +343,8 @@ begin  -- behave
 --======================================= Execution =================================================--
 
 	reg_EX : reg generic map (91) port map (EX_in, EX_out, clock, EX_en, reset);
-	M7 : mux4to1 generic map (16) port map (x"0000", x"0001", EX_B , MA_ALUout, M7_out, EX_M7_Sel(0), EX_M7_Sel(1));
-	M8 : mux4to1 generic map (16) port map (EX_SE6_out, EX_A, MA_ALUout, x"0000", M8_out, EX_M8_Sel(0), EX_M8_Sel(1));
+	M7 : mux4to1 generic map (16) port map (x"0000", x"0001", EX_B , M7_In, M7_out, Nxt_M7_Sel(0), Nxt_M7_Sel(1));
+	M8 : mux4to1 generic map (16) port map (EX_SE6_out, EX_A, M8_In, x"0000", M8_out, Nxt_M8_Sel(0), Nxt_M8_Sel(1));
 	M6 : mux4to1 generic map (16) port map (PC_incr_out, DMemory_out, PCImm, x"0000", M6_out, EX_M6_Sel(0), EX_M6_Sel(1));
 
 	ConcBlock : CondBlock port map ( EX_OpCode, EX_ALU_val, Curr_RFWrite, Nxt_RFWrite);
@@ -311,7 +355,10 @@ begin  -- behave
 	ALU : alu16 port map (M7_out, M8_out, EX_OpSel, EX_ALUout, cout, zout, ALUeq);
 
 -------------------------- FlagBlock ----------------------------------------------------------------------
-	FR : FlagBlock port map (clock, reset, EX_ALUc, EX_ALUz, EX_Cen, EX_Zen, EX_ALUop, cout, zout, ALU_val, FR_out);
+	FR : FlagBlock port map (clock, reset, EX_ALUc, EX_ALUz, EX_Cen, EX_Zen, EX_ALUop, cout, zout, EX_ALU_val, FR_out);
+
+-------------------------- Forwarding Block ----------------------------------------------------------------------------
+	FB : FrwdBlock port map (MA_M4_Sel, WB_M4_Sel, MA_RFWrite, WB_RFWrite, EX_OpCode, EX_M7_Sel, EX_M8_Sel, MA_Ir911, WB_Ir911, EX_Ir35, EX_Ir68, MA_ALUout, WB_MemOut, M7_In, M8_In, Nxt_M7_Sel, Nxt_M8_Sel );
 
 	EX_B <= RR_out(66 downto 51);
 	EX_A <= RR_out(50 downto 35);
@@ -323,6 +370,14 @@ begin  -- behave
 	Curr_RFWrite <= RR_out(34);
 	EX_OpSel <= RR_out(75);
 	EX_ALUop <= RR_out(105);
+
+	EX_ALUc <= RR_out(76);
+	EX_ALUz <= RR_out(77);
+	EX_Cen <= RR_out(78);
+	EX_Zen <= RR_out(79);
+
+	EX_Ir35 <= RR_out(28 downto 26);
+	EX_Ir68 <= RR_out(31 downto 29);
 
 	EX_OpCode <= RR_out(104 downto 101) & RR_out(24 downto 23);
 
@@ -352,7 +407,7 @@ begin  -- behave
 
 
 	RRead_SrcB1 <= DC_out(12 downto 10);
-	RRead_SrcB2 <= b"000"; 	--from SM block
+	RRead_SrcB2 <= DC_out(60 downto 58); 	--from SM block
 	RR_M1_Sel   <= DC_out(31);
 
 	RRead_SrcA1 <= DC_out(9 downto 7);
@@ -366,7 +421,7 @@ begin  -- behave
 
 	RR_M5_Sel    <= DC_out(33);
 
-	RF : regfile port map (clock, reset, M1_out, M2_out, RFoutA, RFoutB, M4_out, WB_RFWrite, M3_out);
+	RF : regfile port map (clock, reset, M2_out, M1_out, RFoutA, RFoutB, M4_out, WB_RFWrite, M3_out);
 
 	PCImmAdder : PCImmAdd port map(M5_out, RR_PC, JB_addr);
 
@@ -378,7 +433,7 @@ begin  -- behave
 	RR_in(22 downto 7) <= DC_out(53 downto 38);		-- PC
 	RR_in(31 downto 23) <= DC_out(12 downto 4);		-- 0-8
 	RR_in(33 downto 32) <= DC_out(14 downto 13);		-- M4_Sel
-	RR_in(34) <= DC_out(15);					-- RF_Write
+	RR_in(34) <= DC_out(15);				-- RF_Write
 	RR_in(50 downto 35) <= RFoutA;				-- RF file out A
 	RR_in(66 downto 51) <= RFoutB;				-- RF file out B
 	RR_in(68 downto 67) <= DC_out(17 downto 16);		-- M9_Sel
@@ -399,34 +454,38 @@ begin  -- behave
 	RR_in(104 downto 101) <= DC_out(37 downto 34);		-- OpCode
 	RR_in (105) <= DC_out(54);                              --ALUOp
 
-	LM_Slct <= "000";		-- From the LM/SM Block
+	LM_Slct <= DC_out(57 downto 55);		-- From the LM Block
 
 
 --=========================================== Decode ====================================================--
 
-	reg_DC : reg generic map (55) port map (DC_in, DC_out, clock, DC_en, reset);
-	DC_in(0) <= M3_Sel;
+	reg_DC : reg generic map (61) port map (DC_in, DC_out, clock, DC_en, reset);
+	DC_in(0) <= M3_Sel_ls;
 	DC_in(3 downto 1) <= Ir9_11;
 	DC_in(12 downto 4) <= Ir0_8;
-	DC_in(14 downto 13) <= M4_Sel;
-	DC_in(15) <= RF_Write;
-	DC_in(17 downto 16) <= M9_Sel;
-	DC_in(18) <= MemRead;
-	DC_in(19) <= MemWrite;
-	DC_in(21 downto 20) <= M7_Sel;
-	DC_in(23 downto 22) <= M8_Sel;
+	DC_in(14 downto 13) <= M4_Sel_ls;
+	DC_in(15) <= RF_Write_ls;
+	DC_in(17 downto 16) <= M9_Sel_ls;
+	DC_in(18) <= MemRead_ls;
+	DC_in(19) <= MemWrite_ls;
+	DC_in(21 downto 20) <= M7_Sel_ls;
+	DC_in(23 downto 22) <= M8_Sel_ls;
 	DC_in(24) <= OpSel; 
 	DC_in(25) <= ALUc;
 	DC_in(26) <= ALUz;
 	DC_in(27) <= Cen;
 	DC_in(28) <= Zen; 
 	DC_in(30 downto 29) <= M6_Sel;
-	DC_in(31) <= M1_Sel;
-	DC_in(32) <= M2_Sel;
+	DC_in(31) <= M1_Sel_ls;
+	DC_in(32) <= M2_Sel_ls;
 	DC_in(33) <= M5_Sel;  
 	DC_in(37 downto 34) <= Ir12_15;
 	DC_in(53 downto 38) <= IF_PC;
 	DC_in(54) <= ALUOp;
+	DC_in(57 downto 55) <= LM_reg;
+	DC_in(60 downto 58) <= SM_reg;
+
+	LM_SM : LmSmBlock port map ( clock, reset, Ir0_8, Ir12_15, M1_Sel, M2_Sel, M3_Sel, M4_Sel, M9_Sel, M7_Sel, M8_Sel, PC_en, IF_en, MemRead, MemWrite, RF_Write, M1_Sel_ls, M2_Sel_ls, M3_Sel_ls, M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls, PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls, LM_reg, SM_reg);
 
 	DC_en <= '1';	-- Will be modified by LM/SM block
 
@@ -455,8 +514,8 @@ begin  -- behave
 	reg_PC : reg generic map (16) port map (M6_out, PC_out, clock, PC_en, reset);
 	Finc: incr port map(PC_out, PC_incr_out);
 
-	PC_en <= '1';		-- Will be modified by LM/SM block
-	IF_en <= '1';		-- Will be modified by LM/SM block
+	PC_en <= PC_en_ls;		-- modified by LM/SM block
+	IF_en <= IF_en_ls;		-- modified by LM/SM block
 	IMem_Read <= '1';	-- Always read from Instruction Memory
 --===========================================================================================================--
 
