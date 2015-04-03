@@ -140,6 +140,44 @@ begin
 	   M7_Sel <= b"10";
 	   M8_Sel <= b"00";
 	   M9_Sel <=b"00";
+	elsif (Instruction(15 downto 12) =X"6") then
+	   RF_Write <= '0';
+	   MemRead <= '0';
+	   MemWrite <= '0';
+	   OpSel <= '0';
+	   ALUc <= '0';
+	   ALUz <= '0';
+	   Cen <= '0';
+	   Zen <= '0';
+	   ALUOp <= '1';
+	   M1_Sel <= '0';
+	   M2_Sel <='0';
+	   M3_Sel <='0';
+           M4_Sel <= b"00";
+	   M5_Sel <='0';
+	   M6_Sel <= b"00";
+	   M7_Sel <= b"00";
+	   M8_Sel <= b"00";
+	   M9_Sel <=b"00";
+	elsif (Instruction(15 downto 12) =X"7") then
+	   RF_Write <= '0';
+	   MemRead <= '0';
+	   MemWrite <= '0';
+	   OpSel <= '0';
+	   ALUc <= '0';
+	   ALUz <= '0';
+	   Cen <= '0';
+	   Zen <= '0';
+	   ALUOp <= '1';
+	   M1_Sel <= '0';
+	   M2_Sel <='0';
+	   M3_Sel <='0';
+           M4_Sel <= b"00";
+	   M5_Sel <='0';
+	   M6_Sel <= b"00";
+	   M7_Sel <= b"00";
+	   M8_Sel <= b"00";
+	   M9_Sel <=b"00";
 	end if;
 
 end process main;

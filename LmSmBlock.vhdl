@@ -32,6 +32,7 @@ begin
 	Main : process( clock, reset, Ir0_8, Ir12_15, M1_Sel, M2_Sel, M3_Sel, M4_Sel, M9_Sel, M7_Sel, M8_Sel, PC_en, IF_en, MemRead, MemWrite, RF_Write )
 
 	begin
+	if clock = '1' then
 		if Ir12_15 = x"7" then
 			LM_reg <= "000";
 			if ( iteration = 0 ) then
@@ -158,7 +159,7 @@ begin
 				M4_Sel_ls <= "00";
 				M9_Sel_ls <= "01";
 				M7_Sel_ls <= "01";
-				M8_Sel_ls <= "10";
+				M8_Sel_ls <= "11";
 				MemRead_ls <= '0';
 				MemWrite_ls <= '1';
 				RF_Write_ls <= '0';				
@@ -368,7 +369,7 @@ begin
 				M4_Sel_ls <= "00";
 				M9_Sel_ls <= "00";
 				M7_Sel_ls <= "01";
-				M8_Sel_ls <= "10";
+				M8_Sel_ls <= "11";
 				MemRead_ls <= '1';
 				MemWrite_ls <= '0';
 				RF_Write_ls <= '1';				
@@ -466,7 +467,7 @@ begin
 			MemWrite_ls <= MemWrite;
 			RF_Write_ls <= RF_Write;
 		end if;
-
+	end if;
 	end process Main;
 end behave;
 
