@@ -174,12 +174,14 @@ end component;
 
 component FrwdBlock is
 port (
+	clock, reset : in std_logic;
+	iteration : in std_logic_vector(3 downto 0);
 	MA_M4_Sel, WB_M4_Sel : in std_logic_vector(1 downto 0);		-- M4 sel lines
 	MA_RFWrite, WB_RFWrite : in std_logic;				-- RF write
 	OpCode : in std_logic_vector(5 downto 0);			-- Opcode (12-15 & 0-1)
 	Curr_M7_Sel, Curr_M8_Sel : in std_logic_vector(1 downto 0);	-- Current Mux select lines
 	MA_Ir911, WB_Ir911, Ir35, Ir68, Ir911 : in std_logic_vector(2 downto 0);	-- Source and destination registers
-	ALUout, MemOut : in std_logic_vector(15 downto 0);		-- ALUout and Data memory out
+	MA_ALUout, MA_MemOut, WB_ALUout, WB_MemOut : in std_logic_vector(15 downto 0);		-- ALUout and Data memory out
 	M7_In, M8_In : out std_logic_vector(15 downto 0);		-- Inputs for M7 and M8
 	Nxt_M7_Sel, Nxt_M8_Sel : out std_logic_vector(1 downto 0)	-- Updated Mux select lines
     );
@@ -197,7 +199,8 @@ port (
 	M1_Sel_ls, M2_Sel_ls, M3_Sel_ls : out std_logic;
 	M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls : out std_logic_vector(1 downto 0);
 	PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls : out std_logic;
-	LM_reg, SM_reg : out std_logic_vector(2 downto 0)
+	LM_reg, SM_reg : out std_logic_vector(2 downto 0);
+	iteration : out integer
 	);
 end component;
 
@@ -205,8 +208,8 @@ end component;
 
 signal MA_in, MA_out : std_logic_vector(70 downto 0);	-- Memory Access pipeline register
 signal EX_in, EX_out : std_logic_vector(90 downto 0);	-- Execute pipeline register
-signal RR_in, RR_out : std_logic_vector(105 downto 0);	-- Register Read pipeline register
-signal DC_in, DC_out : std_logic_vector(60 downto 0);	-- Decode pipeline register
+signal RR_in, RR_out : std_logic_vector(109 downto 0);	-- Register Read pipeline register
+signal DC_in, DC_out : std_logic_vector(64 downto 0);	-- Decode pipeline register
 signal IF_in, IF_out : std_logic_vector(31 downto 0);	-- Fetch pipeline register
 
 signal ZPad : std_logic_vector(15 downto 0);	-- Zero padded output of WB(63-55)
@@ -225,7 +228,7 @@ signal MA_M9_Sel : std_logic_vector(1 downto 0);
 
 signal MuxExDA_out, MuxExDD_out : std_logic_vector(15 downto 0);	-- Data Memory input Muxes
 signal MuxExDW_out : std_logic;
-signal DMemory_out : std_logic_vector(15 downto 0);	-- Data Memory output
+signal DMemory_out, MA_Memout : std_logic_vector(15 downto 0);	-- Data Memory output
 
 signal PC_en : std_logic;		-- Enable PC updation
 signal PC_out, PC_incr_out : std_logic_vector(15 downto 0);	-- PC output
@@ -282,6 +285,9 @@ signal M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls : std_logic_vector(1 downto 0)
 signal PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls : std_logic;
 
 signal LM_reg, SM_reg : std_logic_vector(2 downto 0);
+signal iteration : integer range 0 to 8:= 0;
+signal EX_ite : std_logic_vector(3 downto 0);
+
 --================================================================================================--
 
 begin  -- behave
@@ -325,6 +331,8 @@ begin  -- behave
 	MA_M4_Sel <= EX_out(33 downto 32);
 	MA_RFWrite <= EX_out(34);
 
+	MA_Memout <= DMemory_out;
+
 	MA_en <= '1';	-- Will be modified by LM/SM block
 
 	MA_Ir911 <= EX_out(3 downto 1);
@@ -358,7 +366,7 @@ begin  -- behave
 	FR : FlagBlock port map (clock, reset, EX_ALUc, EX_ALUz, EX_Cen, EX_Zen, EX_ALUop, cout, zout, EX_ALU_val, FR_out);
 
 -------------------------- Forwarding Block ----------------------------------------------------------------------------
-	FB : FrwdBlock port map (MA_M4_Sel, WB_M4_Sel, MA_RFWrite, WB_RFWrite, EX_OpCode, EX_M7_Sel, EX_M8_Sel, MA_Ir911, WB_Ir911, EX_Ir35, EX_Ir68, EX_Ir911, MA_ALUout, WB_MemOut, M7_In, M8_In, Nxt_M7_Sel, Nxt_M8_Sel );
+	FB : FrwdBlock port map (clock, reset, EX_ite, MA_M4_Sel, WB_M4_Sel, MA_RFWrite, WB_RFWrite, EX_OpCode, EX_M7_Sel, EX_M8_Sel, MA_Ir911, WB_Ir911, EX_Ir35, EX_Ir68, EX_Ir911, MA_ALUout, MA_MemOut, WB_ALUout, WB_MemOut, M7_In, M8_In, Nxt_M7_Sel, Nxt_M8_Sel );
 
 	EX_B <= RR_out(66 downto 51);
 	EX_A <= RR_out(50 downto 35);
@@ -399,9 +407,11 @@ begin  -- behave
 	EX_in(74 downto 71) <= RR_out(104 downto 101);		-- OpCode
 	EX_in(90 downto 75) <= EX_ALUout;			-- ALUout
 
+	EX_ite <= RR_out(109 downto 106);
+
 --======================================== Reg Read =================================================--
 
-	reg_RR : reg generic map (106) port map (RR_in, RR_out, clock, RR_en, reset);
+	reg_RR : reg generic map (110) port map (RR_in, RR_out, clock, RR_en, reset);
 
 	M1 : mux2to1 generic map (3) port map (RRead_SrcB1, RRead_SrcB2, M1_out, RR_M1_Sel);
 	M2 : mux2to1 generic map (3) port map (RRead_SrcA1, RRead_SrcA2, M2_out, RR_M2_Sel);
@@ -454,13 +464,14 @@ begin  -- behave
 	RR_in(100) <= DC_out(33);
 	RR_in(104 downto 101) <= DC_out(37 downto 34);		-- OpCode
 	RR_in (105) <= DC_out(54);                              --ALUOp
+	RR_in (109 downto 106) <= DC_out(64 downto 61); 
 
 	LM_Slct <= DC_out(57 downto 55);		-- From the LM Block
 
 
 --=========================================== Decode ====================================================--
 
-	reg_DC : reg generic map (61) port map (DC_in, DC_out, clock, DC_en, reset);
+	reg_DC : reg generic map (65) port map (DC_in, DC_out, clock, DC_en, reset);
 	DC_in(0) <= M3_Sel_ls;
 	DC_in(3 downto 1) <= Ir9_11;
 	DC_in(12 downto 4) <= Ir0_8;
@@ -485,8 +496,9 @@ begin  -- behave
 	DC_in(54) <= ALUOp;
 	DC_in(57 downto 55) <= LM_reg;
 	DC_in(60 downto 58) <= SM_reg;
+	DC_in(64 downto 61) <= std_logic_vector(to_unsigned(iteration,4));
 
-	LM_SM : LmSmBlock port map ( clock, reset, Ir0_8, Ir12_15, M1_Sel, M2_Sel, M3_Sel, M4_Sel, M9_Sel, M7_Sel, M8_Sel, '1', '1', MemRead, MemWrite, RF_Write, M1_Sel_ls, M2_Sel_ls, M3_Sel_ls, M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls, PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls, LM_reg, SM_reg);
+	LM_SM : LmSmBlock port map ( clock, reset, Ir0_8, Ir12_15, M1_Sel, M2_Sel, M3_Sel, M4_Sel, M9_Sel, M7_Sel, M8_Sel, '1', '1', MemRead, MemWrite, RF_Write, M1_Sel_ls, M2_Sel_ls, M3_Sel_ls, M4_Sel_ls, M9_Sel_ls, M7_Sel_ls, M8_Sel_ls, PC_en_ls, IF_en_ls, MemRead_ls, MemWrite_ls, RF_Write_ls, LM_reg, SM_reg, iteration);
 
 	DC_en <= '1';	-- Will be modified by LM/SM block
 

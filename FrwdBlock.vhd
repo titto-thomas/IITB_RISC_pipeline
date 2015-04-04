@@ -9,12 +9,14 @@ use ieee.numeric_std.all;
 
 entity FrwdBlock is
 port (
+	clock, reset : in std_logic;
+	iteration : in std_logic_vector(3 downto 0);
 	MA_M4_Sel, WB_M4_Sel : in std_logic_vector(1 downto 0);		-- M4 sel lines
 	MA_RFWrite, WB_RFWrite : in std_logic;				-- RF write
 	OpCode : in std_logic_vector(5 downto 0);			-- Opcode (12-15 & 0-1)
 	Curr_M7_Sel, Curr_M8_Sel : in std_logic_vector(1 downto 0);	-- Current Mux select lines
 	MA_Ir911, WB_Ir911, Ir35, Ir68, Ir911 : in std_logic_vector(2 downto 0);	-- Source and destination registers
-	ALUout, MemOut : in std_logic_vector(15 downto 0);		-- ALUout and Data memory out
+	MA_ALUout, MA_MemOut, WB_ALUout, WB_MemOut : in std_logic_vector(15 downto 0);		-- ALUout and Data memory out
 	M7_In, M8_In : out std_logic_vector(15 downto 0);		-- Inputs for M7 and M8
 	Nxt_M7_Sel, Nxt_M8_Sel : out std_logic_vector(1 downto 0)	-- Updated Mux select lines
     );
@@ -22,63 +24,65 @@ end FrwdBlock;
 
 architecture behave of FrwdBlock is
 
-signal init_ls : std_logic := '0';
+signal ite :  integer range 0 to 8 := 0;
 
 begin	--behave
 
-	Main : process (Opcode, Curr_M7_Sel, Curr_M8_Sel, MA_Ir911, WB_Ir911, Ir35, Ir68, ALUout, MemOut, MA_M4_Sel, MA_RFWrite,  WB_M4_Sel, WB_RFWrite )
+	ite <= to_integer(unsigned(iteration));
+
+	Main : process ( clock, reset )
 	begin
+	if clock = '1' then
 		if ( Opcode(5 downto 2) = x"0" or Opcode(5 downto 2) = x"1" or Opcode(5 downto 2) = x"2" ) then
-			init_ls <= '0';
 			if (( MA_Ir911 = Ir35 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1') )then
-				M8_In <= ALUout;
+				M8_In <= MA_ALUout;
 				Nxt_M8_Sel <= b"10";
 				if (( MA_Ir911 = Ir68 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1')) then
 					Nxt_M7_Sel <= b"11";
-					M7_In <= ALUout;
+					M7_In <= MA_ALUout;
 				elsif (( WB_Ir911 = Ir68 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1')) then
 					Nxt_M7_Sel <= b"11";
-					M7_In <= MemOut;
+					M7_In <= WB_MemOut;
 				else
 					Nxt_M7_Sel <= Curr_M7_Sel;
 					M7_In <= x"0000";
 				end if;
 				
 			elsif (( MA_Ir911 = Ir68 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1') ) then
-				M7_In <= ALUout;
+				M7_In <= MA_ALUout;
 				Nxt_M7_Sel <= b"11";
 				if (( MA_Ir911 = Ir35 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1')) then
 					Nxt_M8_Sel <= b"10";
-					M8_In <= ALUout;
+					M8_In <= MA_ALUout;
 				elsif (( WB_Ir911 = Ir35 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1')) then
 					Nxt_M8_Sel <= b"10";
-					M8_In <= MemOut;
+					M8_In <= WB_MemOut;
 				else
 					Nxt_M8_Sel <= Curr_M8_Sel;
 					M8_In <= x"0000";
 				end if;
 			elsif (( WB_Ir911 = Ir35 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1') ) then
-				M8_In <= Memout;
+				M8_In <= WB_Memout;
 				Nxt_M8_Sel <= b"10";
 				if (( MA_Ir911 = Ir68 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1')) then
 					Nxt_M7_Sel <= b"11";
-					M7_In <= ALUout;
+					M7_In <= MA_ALUout;
 				elsif (( WB_Ir911 = Ir68 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1')) then
 					Nxt_M7_Sel <= b"11";
-					M7_In <= MemOut;
+					M7_In <= WB_MemOut;
 				else
 					Nxt_M7_Sel <= Curr_M7_Sel;
 					M7_In <= x"0000";
 				end if;
 			elsif (( WB_Ir911 = Ir68 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1') ) then
-				M7_In <= Memout;
+				M7_In <= WB_Memout;
 				Nxt_M7_Sel <= b"11";
 				if (( MA_Ir911 = Ir35 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1')) then
 					Nxt_M8_Sel <= b"10";
-					M8_In <= ALUout;
+					M8_In <= MA_ALUout;
 				elsif (( WB_Ir911 = Ir35 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1')) then
 					Nxt_M8_Sel <= b"10";
-					M8_In <= MemOut;
+					M8_In <= WB_MemOut;
 				else
 					Nxt_M8_Sel <= Curr_M8_Sel;
 					M8_In <= x"0000";
@@ -86,30 +90,35 @@ begin	--behave
 			else
 				Nxt_M7_Sel <= Curr_M7_Sel;
 				Nxt_M8_Sel <= Curr_M8_Sel;
-				M7_In <= ALUout;
-				M8_In <= ALUout;
+				M7_In <= MA_ALUout;
+				M8_In <= MA_ALUout;
 			end if;
-		elsif ( Opcode(5 downto 2) = x"6" or Opcode(5 downto 2) = x"7" ) and init_ls = '0' then -- Need to rethink !!!
-			init_ls <= '1';
+		elsif ( Opcode(5 downto 2) = x"6" or Opcode(5 downto 2) = x"7" ) and ite = 0 then -- Need to rethink !!!
+			M7_In <= MA_ALUout;
+			Nxt_M7_Sel <= Curr_M7_Sel;
 			if (( MA_Ir911 = Ir911 ) and (MA_M4_Sel = b"01") and (MA_RFWrite = '1') )then
-				M8_In <= ALUout;
+				M8_In <= MA_ALUout;
+				Nxt_M8_Sel <= b"10";
+			elsif (( MA_Ir911 = Ir911 ) and (MA_M4_Sel = b"00") and (MA_RFWrite = '1') )then
+				M8_In <= MA_Memout;
 				Nxt_M8_Sel <= b"10";
 			elsif (( WB_Ir911 = Ir911 ) and (WB_M4_Sel = b"00") and (WB_RFWrite = '1') ) then
-				M8_In <= MemOut;
+				M8_In <= WB_MemOut;
+				Nxt_M8_Sel <= b"10";
+			elsif (( WB_Ir911 = Ir911 ) and (WB_M4_Sel = b"01") and (WB_RFWrite = '1') ) then
+				M8_In <= WB_ALUout;
 				Nxt_M8_Sel <= b"10";
 			else
-				Nxt_M7_Sel <= Curr_M7_Sel;
 				Nxt_M8_Sel <= Curr_M8_Sel;
-				M7_In <= ALUout;
-				M8_In <= ALUout;
+				M8_In <= MA_ALUout;
 			end if;
 		else
-			init_ls <= '0';
 			Nxt_M7_Sel <= Curr_M7_Sel;
 			Nxt_M8_Sel <= Curr_M8_Sel;
-			M7_In <= ALUout;
-			M8_In <= ALUout;
+			M7_In <= MA_ALUout;
+			M8_In <= MA_ALUout;
 		end if;
+	end if;
 	end process Main;
 
 end behave;
